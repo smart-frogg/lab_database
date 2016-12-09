@@ -1,0 +1,88 @@
+1.
+CREATE TABLESPACE TS1
+  DATAFILE 'c:\oracle\oradata\u01\ts1.dbf'
+  SIZE 10M;
+CREATE TABLESPACE TS2
+  DATAFILE 'c:\oracle\oradata\u02\ts2.dbf'
+  SIZE 10M;
+CREATE TABLESPACE TS3
+  DATAFILE 'c:\oracle\oradata\u02\ts3.dbf'
+  SIZE 10M;
+ 2.
+ ALTER USER krayvanova_user QUOTA UNLIMITED ON TS1;
+ ALTER USER krayvanova_user QUOTA UNLIMITED ON TS2;
+ ALTER USER krayvanova_user QUOTA UNLIMITED ON TS3;
+ 3.
+ CREATE SEQUENCE gen_id;
+ create table product
+ ( product_id number,
+   product_name varchar2(25) NOT NULL unique,
+   CONSTRAINT prod_prod_id_pk PRIMARY KEY (product_id)
+ );
+ create table subject
+ ( subject_id number,
+   subject_name varchar2(30) NOT NULL unique,
+   subject_address varchar2(60) NOT NULL,
+   CONSTRAINT sbj_sbj_id_pk PRIMARY KEY (subject_id))
+   PARTITION BY HASH(subject_id)
+	(
+		PARTITION p1 TABLESPACE TS1,
+		PARTITION p2 TABLESPACE TS2,
+		PARTITION p3 TABLESPACE TS3);
+		
+ create table sale
+ (
+	sale_id number PRIMARY KEY,
+	sale_product_id number not null REFERENCES product(product_id),
+	sale_seller_id number not null REFERENCES subject(subject_id),
+	sale_buyer_id number not null REFERENCES subject(subject_id),
+	sale_quantity number not null,
+	sale_price number not null,
+	sale_date date not null default sysdate,
+	sale_dow GENERATED ALWAYS AS to_char (sale_date, 'D')
+);
+Таблица продаж должна секционироваться по дню
+недели, для воскресенья секции не 
+нужно, секции разложить по две в табличные пространства 
+TS
+1, 
+TS
+2, 
+TS
+3.
+Все индексы должны быть помещены в табличное пространство 
+INDX
+.
+4.
+Заполните таблиц
+ы
+данными, не менее 15 строк.
+5.
+Разрешите миграцию строк между секциями 
+таблиц.
+6.
+Проверьте миграцию строк между секциями.
+7.
+Посчитайте количество записей в каждой из секций секционированных таблиц.
+8.
+Сделайте запрос о проданных товарах во вторник, с явным указанием имени 
+секции и без него.
+9.
+Удалите секцию соответствующую среде.
+10.
+Проверьте запросом без указания секции, что данных за среду нет.
+11.
+Попробуйте добавить данные с данными о продажах за среду
+.
+В какую секцию они 
+добавились.
+12.
+Удалите одну из секция таблицы справочника продавцов и покупателей.
+13.
+Проверьте индексы 
+на их возможность использования.
+14.
+Перестройте индексы, которые находятся в 
+неиспользуемом
+состоянии, если 
+таковые имеются.

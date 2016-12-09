@@ -1,0 +1,77 @@
+1. select TABLESPACE_NAME from dba_tablespaces; 
+
+2. select File_name from dba_data_files;
+
+3. 
+select tablespace_name, sum(bytes) from dba_data_files, group by tablespace_name;
+select tablespace_name, sum(bytes) from dba_free_space, group by tablespace_name;
+SELECT  free.tablespace_name TABLESPACE, 
+    files.bytes as total,
+    (files.bytes - free.bytes) as used,      
+    (free.bytes) as free 
+FROM
+  (
+    SELECT tablespace_name, SUM(bytes) bytes FROM dba_free_space
+    GROUP BY tablespace_name
+  ) free,
+  (
+    SELECT tablespace_name, SUM(bytes) bytes FROM dba_data_files 
+    GROUP BY tablespace_name
+  ) files
+WHERE 
+  free.tablespace_name = files.tablespace_name;
+
+4.  
+CREATE TABLESPACE TOOLS
+  DATAFILE 'c:\oracle\oradata\u02\tools01.dbf'
+  SIZE 10M;
+  
+5.
+alter database datafile 'c:\oracle\oradata\u02\tools01.dbf' RESIZE 20M;
+alter database datafile 'c:\oracle\oradata\u02\tools01.dbf'  AUTOEXTEND ON MAXSIZE 100M;
+
+6. 
+alter system set db_8k_cache_size = 16m;
+CREATE TABLESPACE NEWTBS
+DATAFILE 'c:\oracle\oradata\u01\newtbs1.dbf'
+SIZE 10M
+AUTOEXTEND ON NEXT 1M 
+BLOCKSIZE 8K;
+
+7. alter tablespace NEWTBS
+add DATAFILE 'c:\oracle\oradata\u02\newtbs2.dbf'
+SIZE 10M;
+
+8. CREATE TEMPORARY TABLESPACE TEMP1
+TEMPFILE 'c:\oracle\oradata\u02\temp101.dbf'
+SIZE 10M
+AUTOEXTEND ON MAXSIZE 20M;
+-----------------------------------------------
+1. create user krayvanova_adm IDENTIFIED BY adm
+    DEFAULT TABLESPACE USERS 
+	QUOTA 10M ON USERS
+    TEMPORARY TABLESPACE TEMP;
+
+2. grant dba to krayvanova_adm;
+	
+3. create user krayvanova_user IDENTIFIED BY user1
+    DEFAULT TABLESPACE NEWTBS 
+    QUOTA 10M ON NEWTBS
+    TEMPORARY TABLESPACE TEMP;
+4. grant create session, create table to krayvanova_user;
+5. create table krayvanova_adm.table_adm (
+    id INT NOT NULL PRIMARY KEY);
+	create table krayvanova_user.table_user(
+    id INT NOT NULL PRIMARY KEY);
+select table_name, tablespace_name
+from dba_all_tables
+where table_name like 'TABLE%';
+6. drop tablespace temp1;
+7. select USERNAME, TEMPORARY_TABLESPACE from dba_users where USERNAME like 'KRAYVANOVA%'; 
+8. ALTER SYSTEM set RESOURCE_LIMIT = true;
+	CREATE PROFILE krayvanova_profile LIMIT 
+   SESSIONS_PER_USER 1;
+   select* from dba_profiles where profile like 'KRAYVANOVA_PROFILE';
+   select sid||','||serial# sess,username,status from v$session where USERNAME like 'KRAYVANOVA_USER'; 
+9. alter user krayvanova_user profile krayvanova_profile;
+10. alter profile krayvanova_profile LIMIT failed_login_attempts 3 password_lock_time 1/(24*60);

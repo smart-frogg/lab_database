@@ -1,0 +1,95 @@
+sqlplus:
+select log_mode from v$database;
+shutdown IMMEDIATE;
+startup mount;
+ALTER DATABASE NOARCHIVELOG;
+ALTER DATABASE OPEN;
+shutdown IMMEDIATE;
+startup mount;
+ALTER DATABASE ARCHIVELOG;
+ALTER DATABASE OPEN;
+?? как переключить журнал транзакций? alter system switch logfile
+
+rman:
+show all;
+CONFIGURE RETENTION POLICY TO RECOVERY WINDOW OF 7 DAYS;
+CONFIGURE DEFAULT DEVICE TYPE TO DISK;
+CONFIGURE BACKUP OPTIMIZATION ON;
+CONFIGURE COMPRESSION ALGORITHM 'MEDIUM';
+configure device type disk backup type to compressed backupset;
+configure controlfile autobackup on;
+?? Место положение резервных копий в fast_recovery_area
+backup database plus archivelog;
+
+windows:
+setx Oracle_sid dbvm
+setx nls_lang american_america.cl8mswin1251
+sqlplus /nolog 
+connect dbvm as sysdba
+SELECT tablespace_name, file_name
+	FROM dba_data_files
+	WHERE tablespace_name LIKE 'SYSTEM' or tablespace_name LIKE 'USERS'
+	ORDER BY tablespace_name, file_name;
+SELECT tablespace_name, file_name
+	FROM dba_temp_files ORDER BY tablespace_name, file_name;
+select group#, member from v$logfile order by group#;
+shutdown IMMEDIATE;
+удаление файла
+startup;
+select p.spid
+	from v$process p, v$session s
+	where p.addr = s.paddr
+	and s.audsid = userenv('SESSIONID');
+?? как узнать имя файла trace?
+shutdown IMMEDIATE;
+удаление файла
+startup;
+
+create table krayvanova_user.table18_1 (
+  order_id number,
+  order_dt date,
+  cust_id  number
+);
+
+RMAN:
+restore tablespace users;
+RECOVER DATAFILE 5;
+
+create table krayvanova_user.table18_2 (
+  order_id number,
+  order_dt date,
+  cust_id  number
+);
+
+shutdown IMMEDIATE;
+удаление файла
+startup;
+?? где trace?
+startup mount;
+restore tablespace system;
+RECOVER DATAFILE 1;
+
+shutdown IMMEDIATE;
+удаление файла
+startup mount;
+/// restore controlfile from autobackup; только если совсем всё накрылось
+
+-----------------------------------------------------
+CREATE TABLE krayvanova_user.my_objects
+  AS (SELECT * FROM all_objects);
+CREATE INDEX OrderIdIdx ON krayvanova_user.table18_2(order_id); 
+CREATE INDEX CustIdIdx ON krayvanova_user.table18_2(cust_id); 
+GRANT SELECT ON krayvanova_user.table18_2 to krayvanova_adm  ;
+GRANT SELECT ON krayvanova_user.my_objects to krayvanova_adm  ;
+GRANT SELECT ON krayvanova_user.table_user to krayvanova_adm  ;
+
+expdp krayvanova_adm/adm schemas=krayvanova_user
+
+create user new_user IDENTIFIED BY user1
+    DEFAULT TABLESPACE NEWTBS 
+    QUOTA 10M ON NEWTBS
+    TEMPORARY TABLESPACE TEMP;
+grant create session to new_user;
+impdp system REMAP_SCHEMA=krayvanova_user:new_user
+select TABLE_NAME, OWNER from ALL_TABLES where OWNER LIKE 'NEW_USER';
+select count (TABLE_NAME),OWNER from ALL_TABLES group by OWNER;
